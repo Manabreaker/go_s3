@@ -1,0 +1,29 @@
+gateway_server:
+  host: 127.0.0.1
+  port: 7000
+  path_prefix: /
+  timeout:
+    server: 30
+    read: 15
+    write: 10
+    idle: 5
+
+auth_server:
+  host: 127.0.0.1
+  port: 8000
+  path_prefix: /account
+  timeout:
+    server: 30
+    read: 15
+    write: 10
+    idle: 5
+
+s3_server:
+  host: 127.0.0.1
+  port: 8080
+  path_prefix: /api
+  timeout:
+    server: 30
+    read: 15
+    write: 10
+    idle: 5

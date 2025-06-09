@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<!-- Объединённые стили из styles.css -->
+<style>
+    /* ---------------------- Global Styles ---------------------- */
+    :root {
+        --primary-color: #4a6fa5;
+        --secondary-color: #6c757d;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --light-color: #f8f9fa;
+        --dark-color: #343a40;
+        --border-color: #dee2e6;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: var(--dark-color);
+        background-color: #f5f7fa;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    h1, h2, h3 {
+        margin-bottom: 20px;
+        color: var(--primary-color);
+    }
+
+    /* ---------------------- Header Styles ---------------------- */
+    header {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px var(--shadow-color);
+        margin-bottom: 30px;
+        position: relative; /* добавлено, чтобы кнопка выхода позиционировалась относительно хедера */
+    }
+
+    header h1 {
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    header h1 i {
+        color: var(--primary-color);
+    }
+
+    .logout-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background-color: #f44336;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        transition: background-color 0.3s;
+    }
+
+    .logout-btn:hover {
+        background-color: #d32f2f;
+    }
+
+    /* ---------------------- Main Content Styles ---------------------- */
+    main {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+    }
+
+    /* ---------------------- Upload Section Styles ---------------------- */
+    .upload-section {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px var(--shadow-color);
+    }
+
+    .upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+        border-color: var(--primary-color);
+        background-color: rgba(74, 111, 165, 0.05);
+    }
+
+    .upload-area i {
+        font-size: 48px;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+    }
+
+    .upload-progress {
+        height: 10px;
+        background-color: var(--border-color);
+        border-radius: 5px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: var(--primary-color);
+        width: 0;
+        transition: width 0.3s ease;
+    }
+
+    /* ---------------------- Files Section Styles ---------------------- */
+    .files-section {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px var(--shadow-color);
+    }
+
+    .search-bar {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .search-bar i {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-color);
+    }
+
+    .files-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .file-item:hover {
+        background-color: rgba(74, 111, 165, 0.05);
+    }
+
+    .file-icon {
+        font-size: 24px;
+        margin-right: 15px;
+        color: var(--primary-color);
+    }
+
+    .file-details {
+        flex-grow: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .file-meta {
+        font-size: 14px;
+        color: var(--secondary-color);
+    }
+
+    .file-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: var(--secondary-color);
+    }
+
+    .loading i {
+        margin-right: 10px;
+    }
+
+    /* ---------------------- Button Styles ---------------------- */
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .primary-btn {
+        background-color: var(--primary-color);
+        color: white;
+        width: 100%;
+    }
+
+    .primary-btn:hover {
+        background-color: #3a5a84;
+    }
+
+    .secondary-btn {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+
+    .secondary-btn:hover {
+        background-color: #5a6268;
+    }
+
+    .danger-btn {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .danger-btn:hover {
+        background-color: #c82333;
+    }
+
+    /* ---------------------- Modal Styles ---------------------- */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: white;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 30px;
+        position: relative;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 28px;
+        cursor: pointer;
+        color: var(--secondary-color);
+    }
+
+    .modal-body {
+        margin: 20px 0;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        padding: 20px;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    /* ---------------------- Footer Styles ---------------------- */
+    footer {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        color: var(--secondary-color);
+    }
+
+    /* ---------------------- Responsive Styles ---------------------- */
+    @media (max-width: 768px) {
+        main {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-content {
+            width: 95%;
+        }
+    }
+</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр файла - Gaus Storage</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .shared-file-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            padding: 30px;
+        }
+
+        .file-preview {
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .loading-spinner {
+            font-size: 40px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><i class="fas fa-cloud"></i> Gaus Storage</h1>
+        <a href="/" class="btn secondary-btn" style="position: absolute; right: 15px; top: 15px;">
+            <i class="fas fa-home"></i> На главную
+        </a>
+    </header>
+
+    <div class="shared-file-container" id="fileContainer">
+        <div class="loading-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Загрузка файла...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Gaus Storage. Все права защищены.</p>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const STORAGE_API = 'http://127.0.0.1:7000';
+        const fileContainer = document.getElementById('fileContainer');
+
+        // Получаем UUID напрямую из пути URL
+        const path = window.location.pathname;
+        const pathParts = path.split('/');
+        // Получаем последнюю часть URL после /share/
+        const uuid = pathParts[pathParts.length - 1];
+
+        if (!uuid || !uuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            showError('Некорректная ссылка на файл');
+            return;
+        }
+
+        // Запрашиваем JSON с base64 и именем файла
+        fetch(`${STORAGE_API}/file/${uuid}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Файл не найден или срок действия ссылки истек');
+                    }
+                    throw new Error('Ошибка при загрузке файла');
+                }
+                return response.json();
+            })
+            .then(({ base64, filename }) => {
+                // Определяем расширение и MIME-тип по файлу
+                const fileExt = filename.split('.').pop().toLowerCase();
+                const mimeTypes = {
+                    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', svg: 'image/svg+xml',
+                    mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
+                    mp4: 'video/mp4', avi: 'video/x-msvideo', mov: 'video/quicktime', webm: 'video/webm',
+                    pdf: 'application/pdf',
+                    txt: 'text/plain', md: 'text/markdown', html: 'text/html', css: 'text/css', js: 'application/javascript', json: 'application/json'
+                };
+                const contentType = mimeTypes[fileExt] || 'application/octet-stream';
+                const fileUrl = `data:${contentType};base64,${base64}`;
+
+                displayFile(fileUrl, filename, contentType);
+            })
+            .catch(error => {
+                showError(error.message);
+            });
+
+        function displayFile(fileUrl, filename, contentType) {
+            const fileExt = filename.split('.').pop().toLowerCase();
+            let filePreviewHtml = '';
+            let canPreview = true;
+
+            if (contentType.startsWith('image/')) {
+                filePreviewHtml = `<img src="${fileUrl}" style="max-width:100%; max-height:500px;">`;
+            } else if (contentType.startsWith('audio/')) {
+                filePreviewHtml = `<audio controls src="${fileUrl}" style="width:100%;"></audio>`;
+            } else if (contentType.startsWith('video/')) {
+                filePreviewHtml = `<video controls src="${fileUrl}" style="max-width:100%; max-height:500px;"></video>`;
+            } else if (contentType === 'application/pdf') {
+                filePreviewHtml = `<iframe src="${fileUrl}" style="width:100%; height:500px;"></iframe>`;
+            } else if (['txt', 'md', 'html', 'css', 'js', 'json'].includes(fileExt)) {
+                filePreviewHtml = `<div class="loading-container">
+                                     <div class="loading-spinner">
+                                       <i class="fas fa-spinner fa-spin"></i>
+                                     </div>
+                                     <p>Загрузка текста...</p>
+                                   </div>`;
+
+                fetch(fileUrl)
+                    .then(response => response.text())
+                    .then(text => {
+                        document.querySelector('.file-preview').innerHTML =
+                            `<pre style="text-align:left; white-space:pre-wrap; max-height:500px; overflow:auto;">${text}</pre>`;
+                    })
+                    .catch(() => {
+                        document.querySelector('.file-preview').innerHTML =
+                            `<div class="error-message">Не удалось загрузить содержимое текстового файла</div>`;
+                    });
+            } else {
+                filePreviewHtml = `
+                    <div style="padding: 30px;">
+                        <i class="fas fa-file" style="font-size: 48px; color: var(--primary-color);"></i>
+                        <p style="margin-top: 20px;">Предпросмотр для этого типа файла недоступен</p>
+                    </div>`;
+                canPreview = false;
+            }
+
+            // Иконка файла
+            let fileIcon = 'fa-file';
+            const iconMapping = {
+                image: ["jpg","jpeg","png","gif","svg"],
+                pdf: ["pdf"], word: ["doc","docx"], excel: ["xls","xlsx"],
+                ppt: ["ppt","pptx"], archive: ["zip","rar","7z"],
+                audio: ["mp3","wav","ogg"], video: ["mp4","avi","mov","webm"],
+                code: ["html","css","js","php","py","java","c","cpp"], text: ["txt","md"]
+            };
+            for (const [key, extensions] of Object.entries(iconMapping)) {
+                if (extensions.includes(fileExt)) {
+                    fileIcon = `fa-file-${key}`;
+                    break;
+                }
+            }
+
+            fileContainer.innerHTML = `
+                <h2><i class="fas ${fileIcon}"></i> ${filename}</h2>
+                <div class="file-preview">
+                    ${filePreviewHtml}
+                </div>
+                <div class="file-actions">
+                    <a href="${fileUrl}" download="${filename}" class="btn primary-btn">
+                        <i class="fas fa-download"></i> Скачать файл
+                    </a>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            fileContainer.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <h2>Ошибка</h2>
+                    <p>${message}</p>
+                    <a href="/" class="btn primary-btn" style="margin-top: 20px;">
+                        <i class="fas fa-home"></i> Вернуться на главную
+                    </a>
+                </div>
+            `;
+        }
+    });
+</script>
+</body>
+</html>

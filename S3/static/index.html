@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaus Storage</title>
+    <!-- Внешние зависимости (оставляем без изменений) -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Встроенные стили (скрытие скролла, увеличение окна предпросмотра) -->
+    <style>
+        /* Убираем внутренний скролл у списка файлов – если файлов ≤ 10, весь список поместится на страницу */
+        .files-section .files-list {
+            max-height: none;
+            overflow-y: visible;
+        }
+        /* Небольшие отступы между экшен-кнопками */
+        .file-actions .btn {
+            margin-left: 6px;
+        }
+        /* Большее окно предпросмотра */
+        .modal-content {
+            max-width: 80%;   /* шире */
+            width: 80%;
+            max-height: 85vh; /* чуть выше */
+        }
+        .modal-body {
+            max-height: 65vh; /* место под экшены снизу */
+            overflow-y: auto;
+        }
+    </style>
+
+    <!-- Объединённые стили из styles.css -->
+    <style>
+        /* ---------------------- Global Styles ---------------------- */
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        /* ---------------------- Header Styles ---------------------- */
+        header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            margin-bottom: 30px;
+            position: relative; /* добавлено, чтобы кнопка выхода позиционировалась относительно хедера */
+        }
+
+        header h1 {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header h1 i {
+            color: var(--primary-color);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #f44336;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* ---------------------- Main Content Styles ---------------------- */
+        main {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        /* ---------------------- Upload Section Styles ---------------------- */
+        .upload-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(74, 111, 165, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .upload-progress {
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        /* ---------------------- Files Section Styles ---------------------- */
+        .files-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .search-bar {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .search-bar i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+
+        .files-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .file-item:hover {
+            background-color: rgba(74, 111, 165, 0.05);
+        }
+
+        .file-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            color: var(--primary-color);
+        }
+
+        .file-details {
+            flex-grow: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .file-meta {
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--secondary-color);
+        }
+
+        .loading i {
+            margin-right: 10px;
+        }
+
+        /* ---------------------- Button Styles ---------------------- */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .primary-btn {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+        }
+
+        .primary-btn:hover {
+            background-color: #3a5a84;
+        }
+
+        .secondary-btn {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .secondary-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .danger-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .danger-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* ---------------------- Modal Styles ---------------------- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--secondary-color);
+        }
+
+        .modal-body {
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* ---------------------- Footer Styles ---------------------- */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: var(--secondary-color);
+        }
+
+        /* ---------------------- Responsive Styles ---------------------- */
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><i class="fas fa-cloud"></i> Gaus Storage</h1>
+        <a href="#" class="logout-btn" id="logoutBtn">Выйти</a>
+    </header>
+    <main>
+        <section class="upload-section">
+            <div class="upload-area" id="dropArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Перетащите файл сюда или кликните для выбора</p>
+                <input type="file" id="fileInput" style="display:none">
+            </div>
+            <div class="upload-progress" id="uploadProgress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <button class="btn primary-btn" id="uploadButton">Загрузить</button>
+        </section>
+        <section class="files-section">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Поиск файлов...">
+                <i class="fas fa-search"></i>
+            </div>
+            <!-- Добавляем фильтры по дате -->
+            <div class="date-filter" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <div style="display: flex; flex-direction: column; flex: 1;">
+                    <label for="startDate" style="font-size: 14px; margin-bottom: 5px;">Начало периода:</label>
+                    <input type="datetime-local" id="startDate" class="form-control" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                </div>
+                <div style="display: flex; flex-direction: column; flex: 1;">
+                    <label for="endDate" style="font-size: 14px; margin-bottom: 5px;">Конец периода:</label>
+                    <input type="datetime-local" id="endDate" class="form-control" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <button id="applyDateFilter" class="btn secondary-btn" style="margin-top: 22px;">Применить</button>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <button id="resetDateFilter" class="btn danger-btn" style="margin-top: 22px;">Сбросить</button>
+                </div>
+            </div>
+
+            <!-- Предустановленные периоды -->
+            <div class="preset-periods" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="todayFilter" class="btn secondary-btn" style="font-size: 14px; padding: 6px 12px;">Сегодня</button>
+                <button id="weekFilter" class="btn secondary-btn" style="font-size: 14px; padding: 6px 12px;">Эта неделя</button>
+                <button id="monthFilter" class="btn secondary-btn" style="font-size: 14px; padding: 6px 12px;">Этот месяц</button>
+                <button id="yearFilter" class="btn secondary-btn" style="font-size: 14px; padding: 6px 12px;">Этот год</button>
+            </div>
+
+            <!-- Кнопка сортировки: текст будет обновляться в JS -->
+            <button id="sortBtn" class="btn secondary-btn" style="margin-bottom: 15px;">Алфавит ↑</button>
+            <div class="files-list" id="filesList"></div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Gaus Storage. Все права защищены.</p>
+    </footer>
+</div>
+
+<!-- Модальное окно предпросмотра -->
+<div class="modal" id="fileModal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeModal">&times;</span>
+        <h2 id="modalFileName"></h2>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-actions">
+            <button class="btn secondary-btn" id="downloadBtn">Скачать</button>
+            <button class="btn danger-btn" id="deleteBtn">Удалить</button>
+            <button class="btn tertiary-btn" id="shareBtn">Поделиться</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ------------------------------------------------------------
+        // Изменения:
+        // 1) Убран AUTH_API и STORAGE_API, вместо них — единый BASE_URL с портом 7000.
+        // 2) Из URL-эндпоинтов удалены сегменты "/api" и "/account".
+        // ------------------------------------------------------------
+        const BASE_URL = 'http://127.0.0.1:7000';
+
+        /* DOM */
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const filesList = document.getElementById('filesList');
+        const searchInput = document.getElementById('searchInput');
+        const fileModal = document.getElementById('fileModal');
+        const closeModal = document.getElementById('closeModal');
+        const modalFileName = document.getElementById('modalFileName');
+        const modalBody = document.getElementById('modalBody');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const sortBtn = document.getElementById('sortBtn');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const applyDateFilter = document.getElementById('applyDateFilter');
+        const resetDateFilter = document.getElementById('resetDateFilter');
+        const todayFilter = document.getElementById('todayFilter');
+        const weekFilter = document.getElementById('weekFilter');
+        const monthFilter = document.getElementById('monthFilter');
+        const yearFilter = document.getElementById('yearFilter');
+
+        /* State */
+        let currentFiles = [];
+        let selectedFile = null;
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let sortMode = 'nameAsc'; // Варианты: nameAsc, nameDesc, dateAsc, dateDesc
+
+        /* Helpers */
+        const updateSortLabel = () => {
+            // Обновляем текст кнопки сортировки в зависимости от текущего режима
+            switch(sortMode) {
+                case 'nameAsc':
+                    sortBtn.textContent = 'Алфавит ↑';
+                    break;
+                case 'nameDesc':
+                    sortBtn.textContent = 'Алфавит ↓';
+                    break;
+                case 'dateAsc':
+                    sortBtn.textContent = 'Дата ↑';
+                    break;
+                case 'dateDesc':
+                    sortBtn.textContent = 'Дата ↓';
+                    break;
+            }
+        };
+
+        /* Auth check */
+        if (!getToken()) {
+            window.location.href = '/login';
+            return;
+        }
+
+        /* Init */
+        loadFiles();
+        updateSortLabel();
+
+        /* Upload area events */
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+        dropArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+        dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+        dropArea.addEventListener('drop', e => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+        });
+
+        /* Buttons */
+        uploadButton.addEventListener('click', () => {
+            if (fileInput.files.length) uploadFile(fileInput.files[0]);
+            else alert('Выберите файл для загрузки');
+        });
+
+        searchInput.addEventListener('input', () => filterFiles(searchInput.value));
+        closeModal.addEventListener('click', () => fileModal.classList.remove('show'));
+        // Закрываем по клику на область вокруг окна
+        fileModal.addEventListener('click', e => {
+            if (e.target === fileModal) fileModal.classList.remove('show');
+        });
+        logoutBtn.addEventListener('click', () => {
+            // Здесь убран сегмент "/account", стало просто "/logout"
+            fetch(`${BASE_URL}/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            }).finally(() => window.location.href = '/login');
+        });
+
+        sortBtn.addEventListener('click', () => {
+            // Циклически меняем режим сортировки
+            switch(sortMode) {
+                case 'nameAsc': sortMode = 'nameDesc'; break;
+                case 'nameDesc': sortMode = 'dateAsc'; break;
+                case 'dateAsc': sortMode = 'dateDesc'; break;
+                case 'dateDesc': sortMode = 'nameAsc'; break;
+            }
+            updateSortLabel();
+            displayFiles(currentFiles);
+        });
+
+        applyDateFilter.addEventListener('click', () => {
+            const start = new Date(startDate.value).getTime() / 1000;
+            const end = new Date(endDate.value).getTime() / 1000;
+            if (isNaN(start) || isNaN(end)) {
+                alert('Введите корректные даты');
+                return;
+            }
+            const filtered = currentFiles.filter(f => f.date >= start && f.date <= end);
+            displayFiles(filtered);
+        });
+
+        resetDateFilter.addEventListener('click', () => {
+            startDate.value = '';
+            endDate.value = '';
+            displayFiles(currentFiles);
+        });
+
+        // Предустановленные фильтры
+        todayFilter.addEventListener('click', () => {
+            const now = new Date();
+            startDate.value = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 16);
+            endDate.value = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString().slice(0, 16);
+            applyDateFilter.click();
+        });
+
+        weekFilter.addEventListener('click', () => {
+            const now = new Date();
+            const firstDay = new Date(now.setDate(now.getDate() - now.getDay()));
+            const lastDay = new Date(now.setDate(firstDay.getDate() + 6));
+            startDate.value = firstDay.toISOString().slice(0, 16);
+            endDate.value = lastDay.toISOString().slice(0, 16);
+            applyDateFilter.click();
+        });
+
+        monthFilter.addEventListener('click', () => {
+            const now = new Date();
+            startDate.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 16);
+            endDate.value = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 16);
+            applyDateFilter.click();
+        });
+
+        yearFilter.addEventListener('click', () => {
+            const now = new Date();
+            startDate.value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 16);
+            endDate.value = new Date(now.getFullYear() + 1, 0, 1).toISOString().slice(0, 16);
+            applyDateFilter.click();
+        });
+
+        /* Modal actions */
+        downloadBtn.addEventListener('click', () => selectedFile && downloadFile(selectedFile));
+        deleteBtn.addEventListener('click', () => {
+            if (selectedFile && confirm(`Удалить файл ${selectedFile}?`)) deleteFile(selectedFile);
+        });
+        shareBtn.addEventListener('click', () => selectedFile && shareFile(selectedFile));
+
+        /* Token stub */
+        function getToken() {
+            return true; // TODO: реализовать получение токена
+        }
+
+        /* Upload logic */
+        function handleFiles(files) {
+            fileInput.files = files;
+            uploadButton.textContent = `Загрузить (${files.length})`;
+        }
+
+        function uploadFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const base64 = e.target.result.split(',')[1];
+                const data = { filename: file.name, file: base64 };
+                uploadProgress.style.display = 'block';
+                progressBar.style.width = '0%';
+                // Здесь убран сегмент "/api", стало просто "/upload"
+                fetch(`${BASE_URL}/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                })
+                    .then(resp => {
+                        progressBar.style.width = '100%';
+                        uploadProgress.style.display = 'none';
+                        if (resp.ok) {
+                            alert('Файл успешно загружен!');
+                            fileInput.value = '';
+                            uploadButton.textContent = 'Загрузить';
+                            loadFiles();
+                        } else {
+                            return resp.text().then(txt => { throw new Error(txt); });
+                        }
+                    })
+                    .catch(err => {
+                        alert('Ошибка загрузки: ' + err.message);
+                        uploadProgress.style.display = 'none';
+                    });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* Files fetch */
+        function loadFiles() {
+            filesList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка файлов...</div>';
+            // Здесь убран сегмент "/api", стало просто "/files"
+            fetch(`${BASE_URL}/files`, { credentials: 'include' })
+                .then(resp => {
+                    if (resp.status === 204) return [];
+                    if (!resp.ok) throw new Error(`Ошибка загрузки списка файлов: ${resp.status} ${resp.statusText}`);
+                    return resp.json();
+                })
+                .then(response => {
+                    console.log('Ответ сервера:', response);
+
+                    // Преобразуем данные в нужный формат
+                    let files = [];
+
+                    // Проверяем разные возможные форматы ответа
+                    if (Array.isArray(response)) {
+                        // Если сервер уже вернул массив объектов {name, date}
+                        files = response;
+                    } else if (response && typeof response === 'object') {
+                        // Обрабатываем случай, когда данные могут прийти в другом формате
+                        // Например, могут быть вложены в другой объект
+                        if (Array.isArray(response.files)) {
+                            files = response.files;
+                        } else if (Array.isArray(response.data)) {
+                            files = response.data;
+                        }
+                        // Если есть массивы names и dates
+                        else if (Array.isArray(response.names) && Array.isArray(response.dates) &&
+                                 response.names.length === response.dates.length) {
+                            for (let i = 0; i < response.names.length; i++) {
+                                files.push({
+                                    name: response.names[i],
+                                    date: response.dates[i]
+                                });
+                            }
+                        }
+                    }
+
+                    console.log('Преобразованные файлы:', files);
+
+                    if (!files.length) {
+                        filesList.innerHTML = '<div class="empty-state">Файлы не найдены.</div>';
+                        return;
+                    }
+
+                    // Проверяем формат элементов массива
+                    if (!files[0].name) {
+                        // Если элементы - просто строки, конвертируем в объекты
+                        if (typeof files[0] === 'string') {
+                            files = files.map(filename => ({
+                                name: filename,
+                                date: new Date().getTime() / 1000 // Текущее время как заглушка
+                            }));
+                        }
+                    }
+
+                    currentFiles = files;
+                    currentPage = 1;
+                    displayFiles(files);
+                })
+                .catch(err => {
+                    console.error('Ошибка при загрузке файлов:', err);
+                    filesList.innerHTML = `<div class="error">Ошибка загрузки файлов: ${err.message}. Попробуйте позже.</div>`;
+                });
+        }
+
+        /* Filtering */
+        function filterFiles(query) {
+            currentPage = 1;
+            if (!query) return displayFiles(currentFiles);
+            query = query.toLowerCase();
+            // Ищем совпадения в имени файла
+            displayFiles(currentFiles.filter(f => f.name.toLowerCase().includes(query)));
+        }
+
+        /* Rendering */
+        function displayFiles(files) {
+            const sortedFiles = [...files].sort((a, b) => {
+                // Сортировка по имени или дате в зависимости от режима
+                if (sortMode.startsWith('name')) {
+                    return sortMode === 'nameAsc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                } else {
+                    // Используем числовое значение даты из поля date
+                    return sortMode === 'dateAsc' ? a.date - b.date : b.date - a.date;
+                }
+            });
+
+            const totalPages = Math.ceil(sortedFiles.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedFiles = sortedFiles.slice(startIndex, startIndex + itemsPerPage);
+
+            filesList.innerHTML = '';
+
+            if (!paginatedFiles.length) {
+                filesList.innerHTML = '<div class="empty-state">Файлы не найдены.</div>';
+                return;
+            }
+
+            paginatedFiles.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.dataset.filename = file.name;
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                let icon = 'fa-file';
+                const mapping = {
+                    image: ["jpg", "jpeg", "png", "gif", "svg"],
+                    pdf: ["pdf"],
+                    word: ["doc", "docx"],
+                    excel: ["xls", "xlsx"],
+                    ppt: ["ppt", "pptx"],
+                    archive: ["zip", "rar", "7z"],
+                    audio: ["mp3", "wav", "ogg"],
+                    video: ["mp4", "avi", "mov", "webm"],
+                    code: ["html", "css", "js", "php", "py", "java", "c", "cpp"],
+                    text: ["txt", "md"]
+                };
+                for (const [key, arr] of Object.entries(mapping)) {
+                    if (arr.includes(ext)) {
+                        icon = `fa-file-${key}`;
+                        break;
+                    }
+                }
+
+                // Форматируем дату для отображения
+                const fileDate = new Date(file.date * 1000);
+                const formattedDate = fileDate.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                fileItem.innerHTML = `
+                    <div class="file-icon"><i class="fas ${icon}"></i></div>
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            <span class="file-type">${ext.toUpperCase()}</span>
+                            <span class="file-date"> · ${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn secondary-btn download-action" title="Скачать"><i class="fas fa-download"></i></button>
+                        <button class="btn tertiary-btn share-action" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+                        <button class="btn danger-btn delete-action" title="Удалить"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+
+                /* Row action handlers */
+                fileItem.querySelector('.download-action').addEventListener('click', e => {
+                    e.stopPropagation();
+                    downloadFile(file.name);
+                });
+                fileItem.querySelector('.share-action').addEventListener('click', e => {
+                    e.stopPropagation();
+                    shareFile(file.name);
+                });
+                fileItem.querySelector('.delete-action').addEventListener('click', e => {
+                    e.stopPropagation();
+                    if (confirm(`Удалить файл ${file.name}?`)) deleteFile(file.name);
+                });
+
+                fileItem.addEventListener('click', () => openFilePreview(file.name));
+                filesList.appendChild(fileItem);
+            });
+
+            addPaginationControls(totalPages);
+        }
+
+        /* Pagination */
+        function addPaginationControls(totalPages) {
+            const pagination = document.createElement('div');
+            pagination.style.textAlign = 'center';
+            pagination.style.marginTop = '20px';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = 'btn secondary-btn';
+                btn.style.margin = '0 5px';
+                if (i === currentPage) {
+                    btn.style.backgroundColor = '#3a5a84';
+                }
+                btn.addEventListener('click', () => {
+                    currentPage = i;
+                    displayFiles(currentFiles);
+                });
+                pagination.appendChild(btn);
+            }
+
+            filesList.appendChild(pagination);
+        }
+
+        /* Preview */
+        function openFilePreview(filename) {
+            selectedFile = filename;
+            modalFileName.textContent = filename;
+            modalBody.innerHTML = '<div style="text-align:center"><i class="fas fa-spinner fa-spin"></i></div>';
+
+            const ext = filename.split('.').pop().toLowerCase();
+
+            const renderPreview = (base64) => {
+                let html = '';
+                if (["jpg", "jpeg", "png", "gif", "svg"].includes(ext)) {
+                    html = `<img src="data:image/${ext};base64,${base64}" style="max-width:100%;">`;
+                } else if (["mp3", "wav", "ogg"].includes(ext)) {
+                    html = `<audio controls src="data:audio/${ext};base64,${base64}" style="width:100%;"></audio>`;
+                } else if (["mp4", "avi", "mov", "webm"].includes(ext)) {
+                    html = `<video controls src="data:video/${ext};base64,${base64}" style="max-width:100%;"></video>`;
+                } else if (ext === "pdf") {
+                    html = `<iframe src="data:application/pdf;base64,${base64}" style="width:100%;height:500px;"></iframe>`;
+                } else if (["txt", "md", "html", "css", "js", "json"].includes(ext)) {
+                    try {
+                        const text = atob(base64);
+                        html = `<pre style="white-space: pre-wrap;">${text}</pre>`;
+                    } catch {
+                        html = `<div class="error">Ошибка декодирования файла</div>`;
+                    }
+                } else {
+                    html = `<div class="no-preview">Нет предпросмотра для этого типа файла.</div>`;
+                }
+                modalBody.innerHTML = html;
+            };
+
+            // Здесь убран сегмент "/api", стало просто "/download"
+            fetch(`${BASE_URL}/download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ filename })
+            })
+                .then(res => res.json())
+                .then(data => renderPreview(data.status || ''))
+                .catch(() => renderPreview(''));
+
+            fileModal.classList.add('show');
+        }
+
+        /* Download */
+        function downloadFile(filename) {
+            // Здесь убран сегмент "/api", стало просто "/download"
+            fetch(`${BASE_URL}/download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ filename })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.status) throw new Error();
+                    const link = document.createElement('a');
+                    link.href = 'data:application/octet-stream;base64,' + data.status;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(() => alert('Ошибка скачивания файла'));
+        }
+
+        /* Delete */
+        function deleteFile(filename) {
+            // Здесь убран сегмент "/api", стало просто "/delete"
+            fetch(`${BASE_URL}/delete`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ filename })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    alert('Файл удалён');
+                    fileModal.classList.remove('show');
+                    loadFiles();
+                })
+                .catch(err => alert('Ошибка удаления: ' + err.message));
+        }
+
+        /* Share */
+        function shareFile(filename) {
+            // Здесь убран сегмент "/api", стало просто "/share"
+            fetch(`${BASE_URL}/share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ filename })
+            })
+                .then(res => {
+                    if (!res.ok) return res.text().then(txt => { throw new Error(txt); });
+                    return res.json();
+                })
+                .then(data => {
+                    const uuid = data.status;
+                    // Формируем ссылку без лишних сегментов
+                    const shareUrl = `${BASE_URL}/share/${uuid}`;
+                    prompt('Ссылка для шаринга (скопируйте):', shareUrl);
+                })
+                .catch(err => alert('Ошибка при получении ссылки: ' + err.message));
+        }
+    });
+</script>
+</body>
+</html>
